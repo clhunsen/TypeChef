@@ -14,7 +14,6 @@ object BuildSettings {
     val buildVersion = "0.4.0"
     val buildScalaVersion = "2.11.4"
 
-
     val buildSettings = Defaults.coreDefaultSettings ++ Seq(
         organization := buildOrganization,
         version := buildVersion,
@@ -30,7 +29,7 @@ object BuildSettings {
         scalacOptions <++= scalaVersion map {
             sv =>
                 if (sv startsWith "2.1") List(
-                    "-Yinline-warnings",
+                    //"-Yinline-warnings",
                     "-feature",
                     "-language:postfixOps",
                     "-language:implicitConversions",
@@ -70,25 +69,8 @@ object BuildSettings {
         publishArtifact in Test := false,
         pomIncludeRepository := {
             _ => false
-        },
-        pomExtra :=
-            <parent>
-                <groupId>org.sonatype.oss</groupId>
-                <artifactId>oss-parent</artifactId>
-                <version>7</version>
-            </parent> ++
-                <scm>
-                    <connection>scm:git:git@github.com:ckaestne/TypeChef.git</connection>
-                    <url>git@github.com:ckaestne/TypeChef.git</url>
-                </scm> ++
-                <developers>
-                    <developer>
-                        <id>ckaestne</id> <name>Christian Kaestner</name> <url>http://www.cs.cmu.edu/~ckaestne/</url>
-                    </developer>
-                </developers>,
-
-        credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
-    ) 
+        }
+		)
 }
 
 object ShellPrompt {
@@ -177,6 +159,7 @@ object TypeChef extends Build {
         cparser,
         errorlib,
         ctypechecker,
+				ccallgraph,
         javaparser,
         crewrite,
         frontend
@@ -225,7 +208,7 @@ object TypeChef extends Build {
         "Frontend",
         file("Frontend"),
         settings = buildSettings ++ VersionGen.settings
-    ) dependsOn(featureexpr, jcpp, cparser % "test->test;compile->compile", ctypechecker, conditionallib, crewrite, javaparser, errorlib)
+    ) dependsOn(featureexpr, jcpp, cparser % "test->test;compile->compile", ctypechecker, conditionallib, crewrite, javaparser, errorlib, ccallgraph)
 
     lazy val ctypechecker = Project(
         "CTypeChecker",
@@ -233,6 +216,14 @@ object TypeChef extends Build {
         settings = buildSettings ++
             Seq(libraryDependencies <+= scalaVersion(kiamaDependency(_)))
     ) dependsOn(cparser % "test->test;compile->compile", conditionallib, errorlib)
+
+    lazy val ccallgraph = Project(
+        "CCallGraph",
+        file("CCallGraph"),
+        settings = buildSettings ++
+            Seq(libraryDependencies <+= scalaVersion(kiamaDependency(_)))
+						
+    ) dependsOn(cparser % "test->test;compile->compile", ctypechecker, conditionallib, errorlib, crewrite)
 
     lazy val javaparser = Project(
         "JavaParser",

@@ -1,16 +1,14 @@
 package de.fosd.typechef
 
-
-import de.fosd.typechef.parser.c._
-import de.fosd.typechef.typesystem._
-import de.fosd.typechef.crewrite._
 import java.io._
-import parser.TokenReader
-import de.fosd.typechef.options.{FrontendOptionsWithConfigFiles, FrontendOptions, OptionException}
-import de.fosd.typechef.parser.c.CTypeContext
-import de.fosd.typechef.parser.c.TranslationUnit
-import de.fosd.typechef.featureexpr.FeatureExpr
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+
+import de.fosd.typechef.ccallgraph.{CCallGraph, CallGraphWriter}
+import de.fosd.typechef.crewrite._
+import de.fosd.typechef.options.{FeatureModelOptions, FrontendOptions, FrontendOptionsWithConfigFiles, OptionException}
+import de.fosd.typechef.parser.TokenReader
+import de.fosd.typechef.parser.c.{CTypeContext, TranslationUnit, _}
+import de.fosd.typechef.typesystem._
 
 object Frontend extends EnforceTreeHelper {
 
@@ -178,8 +176,31 @@ object Frontend extends EnforceTreeHelper {
                     if (opt.writeDebugInterface)
                         ts.debugInterface(interface, new File(opt.getDebugInterfaceFilename))
                 }
-                if (opt.dumpcfg) {
+                if (opt.dumpcg) {
                     println("#call graph")
+                    stopWatch.start("dumpCG")
+
+                    // TODO: use typeSystem to assist extracting lcurly assignments
+                    val typeSystemEnv = ts.typeCheckedEnv()
+
+                    // call graph writer
+                    val writer = new CallGraphWriter(new FileWriter(new File(opt.getCGFilename)))
+
+                    val c = new CCallGraph()
+                    c.calculatePointerEquivalenceRelation(ast)
+                    c.extractCallGraph()
+                    c.writeCallGraph(opt.getFile, writer /*, fullFM */) /* if no feature model is provided, an empty one is used */
+                    c.showCallGraphStatistics()
+
+                    // DEBUG
+//                    c.showPointerEquivalenceClasses()
+//                    c.showFunctionDefs()
+//                    c.showFunctionCalls()
+//                    c.showAssignments()
+                }
+
+                if (opt.dumpcfg) {
+                    println("#control flow graph")
                     stopWatch.start("dumpCFG")
 
                     //run without feature model, because otherwise too expensive runtimes in systems such as linux

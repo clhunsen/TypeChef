@@ -30,6 +30,8 @@ class CTypeSystemFrontend(iast: TranslationUnit,
     var isSilent = false
     def makeSilent() = { isSilent=true; this }
 
+    var finalEnv : Env = EmptyEnv
+
     val DEBUG_PRINT = false
 
     def dbgPrint(o: Any) { if (DEBUG_PRINT) print(o) }
@@ -38,6 +40,7 @@ class CTypeSystemFrontend(iast: TranslationUnit,
 
     val verbose = false
 
+    def typeCheckedEnv() : Env = { finalEnv }
 
     var externalDefCounter: Int = 0
     override def checkingExternal(externalDef: ExternalDef) {
@@ -65,7 +68,7 @@ class CTypeSystemFrontend(iast: TranslationUnit,
     def checkAST(ignoreWarnings: Boolean = true, printResults: Boolean = false): Boolean = {
 
         errors = List() // clear error list
-        typecheckTranslationUnit(iast)
+        val env = typecheckTranslationUnit(iast)
         val merrors = if (ignoreWarnings)
             errors.filterNot(Set(Severity.Warning, Severity.SecurityWarning) contains _.severity)
         else errors
@@ -76,8 +79,26 @@ class CTypeSystemFrontend(iast: TranslationUnit,
                 println("Found " + merrors.size + " type errors: ")
             }
         //println("\n")
+        finalEnv = env
         merrors.isEmpty
     }
+    def checkASTEnv(ignoreWarnings: Boolean = true): Env = {
+
+        errors = List() // clear error list
+        val env = typecheckTranslationUnit(iast)
+        val merrors = if (ignoreWarnings)
+            errors.filterNot(Set(Severity.Warning, Severity.SecurityWarning) contains _.severity)
+        else errors
+        if (merrors.isEmpty)
+            println("No type errors found.")
+        else {
+            println("Found " + merrors.size + " type errors: ")
+        }
+        //println("\n")
+        //        merrors.isEmpty
+        env
+    }
+
     def checkASTSilent: Boolean = {
         isSilent = true
         errors = List() // clear error list

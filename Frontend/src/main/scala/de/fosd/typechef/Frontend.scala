@@ -3,7 +3,7 @@ package de.fosd.typechef
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
-import de.fosd.typechef.ccallgraph.{CallGraphDebugWriter, CCallGraph, CallGraphWriter}
+import de.fosd.typechef.ccallgraph.{DotCallGraphWriter, CallGraphDebugWriter, CCallGraph, CallGraphWriter}
 import de.fosd.typechef.crewrite._
 import de.fosd.typechef.options.{FeatureModelOptions, FrontendOptions, FrontendOptionsWithConfigFiles, OptionException}
 import de.fosd.typechef.parser.TokenReader
@@ -185,6 +185,7 @@ object Frontend extends EnforceTreeHelper {
 
                     // call graph writer
                     val writer = new CallGraphWriter(new FileWriter(new File(opt.getValidCGFilename)))
+                    val dotWriter = new DotCallGraphWriter(new FileWriter(new File(opt.getValidCGFilename + ".dot")))
                     val dbgWriter = new CallGraphDebugWriter(new FileWriter(new File(opt.getDebugCGFilename)))
 
                     val c = new CCallGraph()
@@ -193,13 +194,16 @@ object Frontend extends EnforceTreeHelper {
                     c.writeCallGraph(opt.getFile, writer, fullFM) /* if no feature model is provided, an empty one is used */
                     c.showCallGraphStatistics()
 
+                    // Dot Call Graph
+                    c.writeDotCallGraph(opt.getFile, dotWriter /*, fullFM */) /* if no feature model is provided, an empty one is used */
+
                     // DEBUG
                      c.writeDbgCallGraph(opt.getFile, dbgWriter, fullFM) /* if no feature model is provided, an empty one is used */
                     // c.showPointerEquivalenceClasses()
                     // c.showFunctionDefs()
                     // c.showFunctionCalls()
                     // c.showAssignments()
-                }
+                   }
 
                 if (opt.dumpcfg) {
                     println("#control flow graph")
